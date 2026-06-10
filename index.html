@@ -34,8 +34,15 @@
                     <span class="btn-text">START CAMERA</span>
                     <span class="btn-glow"></span>
                 </button>
-                <p id="loadingText" class="loading-text hidden">Loading model...</p>
-                <p id="errorText" class="error-text hidden"></p>
+                <p id="loadingText" class="loading-text hidden" role="status" aria-live="polite">Loading AI model...</p>
+                <div id="errorText" class="error-text hidden" role="alert"></div>
+
+                <div class="upload-section">
+                    <p>Camera not working? Upload an image instead.</p>
+                    <label for="imageUpload" class="upload-btn">Choose Image</label>
+                    <input id="imageUpload" type="file" accept="image/*">
+                    <img id="uploadPreview" class="upload-preview hidden" alt="Uploaded image preview">
+                </div>
             </div>
         </section>
 
@@ -68,8 +75,8 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
