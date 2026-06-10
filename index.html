@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon AI Image Classifier</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg"></div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">AI Image Classifier</h1>
+                <p class="hero-subtitle">Powered by Teachable Machine</p>
+                <p class="hero-description">Show an object to the webcam and let the AI predict its class</p>
+            </div>
+        </section>
+
+        <!-- Camera Section -->
+        <section class="camera-section">
+            <div class="camera-wrapper">
+                <div id="webcam-container" class="webcam-container">
+                    <div id="webcam-placeholder" class="webcam-placeholder">
+                        <p>📷 Camera Ready</p>
+                    </div>
+                </div>
+                <button id="startBtn" class="start-btn">
+                    <span class="btn-text">START CAMERA</span>
+                    <span class="btn-glow"></span>
+                </button>
+                <p id="loadingText" class="loading-text hidden">Loading model...</p>
+                <p id="errorText" class="error-text hidden"></p>
+            </div>
+        </section>
+
+        <!-- Prediction Section -->
+        <section class="prediction-section">
+            <!-- Top Prediction Card -->
+            <div id="topPredictionCard" class="top-prediction-card hidden">
+                <div class="top-prediction-content">
+                    <p class="top-prediction-label">Top Prediction</p>
+                    <h2 id="topPredictionClass" class="top-prediction-class">--</h2>
+                    <div class="top-prediction-confidence">
+                        <span id="topPredictionValue">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Predictions -->
+            <div class="predictions-container">
+                <h3 class="predictions-title">All Predictions</h3>
+                <div id="predictions" class="predictions-list">
+                    <p class="no-predictions">Start the camera to see predictions</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Built using Teachable Machine, TensorFlow.js, VS Code, and GitHub Pages</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
+    <script src="script.js"></script>
+</body>
+</html>
