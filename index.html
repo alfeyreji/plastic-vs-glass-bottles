@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon AI Image Classifier</title>
+    <title>AI Bottle Classifier</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
@@ -18,7 +18,7 @@
             <div class="hero-content">
                 <h1 class="hero-title">AI Image Classifier</h1>
                 <p class="hero-subtitle">Powered by Teachable Machine</p>
-                <p class="hero-description">Show an object to the webcam and let the AI predict its class</p>
+                <p class="hero-description">Capture an object and let the AI predict whether it is a plastic bottle or glass bottle.</p>
             </div>
         </section>
 
@@ -30,10 +30,14 @@
                         <p>📷 Camera Ready</p>
                     </div>
                 </div>
-                <button id="startBtn" class="start-btn">
-                    <span class="btn-text">START CAMERA</span>
-                    <span class="btn-glow"></span>
-                </button>
+                <div class="camera-controls">
+                    <button id="startBtn" class="start-btn">
+                        <span class="btn-text">START CAMERA</span>
+                        <span class="btn-glow"></span>
+                    </button>
+                    <button id="captureBtn" class="capture-btn hidden">CAPTURE PHOTO</button>
+                    <button id="retakeBtn" class="retake-btn hidden">RETAKE PHOTO</button>
+                </div>
                 <p id="loadingText" class="loading-text hidden" role="status" aria-live="polite">Loading AI model...</p>
                 <div id="errorText" class="error-text hidden" role="alert"></div>
 

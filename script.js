@@ -8,13 +8,15 @@ let model = null;
 let modelLoadPromise = null;
 let cameraStream = null;
 let videoElement = null;
-let predictionAnimationId = null;
+let capturedCanvas = null;
 let isStartingCamera = false;
 let isCameraRunning = false;
-let isPredicting = false;
+let isClassifying = false;
 
 const startBtn = document.getElementById("startBtn");
 const startBtnText = startBtn.querySelector(".btn-text");
+const captureBtn = document.getElementById("captureBtn");
+const retakeBtn = document.getElementById("retakeBtn");
 const webcamContainer = document.getElementById("webcam-container");
 const loadingText = document.getElementById("loadingText");
 const errorText = document.getElementById("errorText");
@@ -27,6 +29,8 @@ const topPredictionValue = document.getElementById("topPredictionValue");
 
 document.addEventListener("DOMContentLoaded", () => {
     startBtn.addEventListener("click", startCamera);
+    captureBtn.addEventListener("click", capturePhoto);
+    retakeBtn.addEventListener("click", retakePhoto);
     imageUpload.addEventListener("change", classifyUploadedImage);
 });
 
@@ -108,9 +112,12 @@ async function startCamera() {
     }
 
     isStartingCamera = true;
-    startBtn.disabled = true;
+    setCameraControls("starting");
     startBtnText.textContent = "STARTING...";
     hideError();
+    uploadPreview.classList.add("hidden");
+    uploadPreview.removeAttribute("src");
+    clearPredictions("Capture a photo to see predictions");
 
     try {
         showStatus("Loading AI model...");
@@ -140,28 +147,23 @@ async function startCamera() {
         webcamContainer.replaceChildren(videoElement);
 
         isCameraRunning = true;
-        startBtnText.textContent = "CAMERA RUNNING";
-        showStatus("Camera started successfully");
-        topPredictionCard.classList.remove("hidden");
-        predictionsDiv.innerHTML =
-            '<p class="no-predictions">Reading camera feed...</p>';
+        setCameraControls("live");
+        showStatus("Camera started successfully. Frame the bottle, then capture a photo.");
 
         const videoTrack = cameraStream.getVideoTracks()[0];
         if (videoTrack) {
             videoTrack.addEventListener("ended", handleCameraEnded, { once: true });
         }
-
-        startPredictionLoop();
     } catch (error) {
         console.error("Camera startup error:", error);
         stopCamera(true);
         handleError(error);
     } finally {
         isStartingCamera = false;
-        startBtn.disabled = isCameraRunning;
 
         if (!isCameraRunning) {
             startBtnText.textContent = "START CAMERA";
+            setCameraControls("stopped");
         }
     }
 }
@@ -194,43 +196,83 @@ function createAndPlayVideo(stream) {
     });
 }
 
-function startPredictionLoop() {
-    cancelPredictionLoop();
-    console.log("Predictions running");
+async function capturePhoto() {
+    if (!isCameraRunning || !videoElement || !model || isClassifying) {
+        return;
+    }
 
-    const predictFrame = async () => {
-        if (!isCameraRunning || !videoElement || !model) {
-            return;
-        }
+    if (!videoElement.videoWidth || !videoElement.videoHeight) {
+        showError("Camera frame is not ready yet. Wait a moment and try again.");
+        return;
+    }
 
-        if (!isPredicting) {
-            isPredicting = true;
+    hideError();
+    isClassifying = true;
+    captureBtn.disabled = true;
+    clearPredictions("Classifying captured photo...");
 
-            try {
-                const predictions = await model.predict(videoElement);
-                renderPredictions(predictions);
-            } catch (error) {
-                console.error("Prediction error:", error);
-                stopCamera(true);
-                handleError(
-                    createNamedError(
-                        "PredictionError",
-                        "Prediction failed. Reload the page and try again.",
-                        error
-                    )
-                );
-                return;
-            } finally {
-                isPredicting = false;
-            }
-        }
+    capturedCanvas = document.createElement("canvas");
+    capturedCanvas.className = "captured-canvas";
+    capturedCanvas.width = videoElement.videoWidth;
+    capturedCanvas.height = videoElement.videoHeight;
 
-        if (isCameraRunning) {
-            predictionAnimationId = requestAnimationFrame(predictFrame);
-        }
-    };
+    const context = capturedCanvas.getContext("2d");
+    context.drawImage(
+        videoElement,
+        0,
+        0,
+        capturedCanvas.width,
+        capturedCanvas.height
+    );
 
-    predictionAnimationId = requestAnimationFrame(predictFrame);
+    videoElement.pause();
+    webcamContainer.replaceChildren(capturedCanvas);
+    setCameraControls("captured");
+    retakeBtn.disabled = true;
+    showStatus("Classifying captured photo...");
+
+    try {
+        const predictions = await model.predict(capturedCanvas);
+        renderPredictions(predictions);
+        showStatus("Photo classified successfully");
+        console.log("Captured photo prediction complete");
+    } catch (error) {
+        console.error("Captured photo prediction error:", error);
+        handleError(
+            createNamedError(
+                "PredictionError",
+                "The captured photo could not be classified.",
+                error
+            )
+        );
+    } finally {
+        isClassifying = false;
+        retakeBtn.disabled = false;
+    }
+}
+
+async function retakePhoto() {
+    if (!isCameraRunning || !videoElement || !hasActiveCameraStream() || isClassifying) {
+        return;
+    }
+
+    hideError();
+    clearPredictions("Capture a photo to see predictions");
+    capturedCanvas = null;
+    webcamContainer.replaceChildren(videoElement);
+
+    try {
+        await videoElement.play();
+        setCameraControls("live");
+        showStatus("Camera ready. Frame the bottle, then capture a photo.");
+        console.log("Camera preview resumed for retake");
+    } catch (error) {
+        console.error("Camera retake error:", error);
+        stopCamera(true);
+        handleError(
+            createNamedError("VideoPlaybackError", "Camera video could not restart.", error)
+        );
+    }
 }
 
 async function classifyUploadedImage(event) {
@@ -239,8 +281,8 @@ async function classifyUploadedImage(event) {
         return;
     }
 
-    if (isStartingCamera) {
-        showError("Wait for the camera startup to finish, then upload the image.");
+    if (isStartingCamera || isClassifying) {
+        showError("Wait for the current camera action to finish, then upload the image.");
         event.target.value = "";
         return;
     }
@@ -360,6 +402,13 @@ function updateTopPrediction(topPrediction) {
     topPredictionValue.textContent = `${topPrediction.percentage}%`;
 }
 
+function clearPredictions(message) {
+    topPredictionCard.classList.add("hidden");
+    topPredictionClass.textContent = "--";
+    topPredictionValue.textContent = "0%";
+    predictionsDiv.innerHTML = `<p class="no-predictions">${message}</p>`;
+}
+
 function hasActiveCameraStream() {
     return Boolean(
         cameraStream &&
@@ -367,16 +416,20 @@ function hasActiveCameraStream() {
     );
 }
 
-function cancelPredictionLoop() {
-    if (predictionAnimationId !== null) {
-        cancelAnimationFrame(predictionAnimationId);
-        predictionAnimationId = null;
-    }
+function setCameraControls(state) {
+    startBtn.classList.toggle("hidden", state === "live" || state === "captured");
+    captureBtn.classList.toggle("hidden", state !== "live");
+    retakeBtn.classList.toggle("hidden", state !== "captured");
+
+    startBtn.disabled = state === "starting";
+    captureBtn.disabled = false;
+    retakeBtn.disabled = false;
 }
 
 function stopCamera(resetDisplay) {
-    cancelPredictionLoop();
     isCameraRunning = false;
+    isClassifying = false;
+    capturedCanvas = null;
 
     if (cameraStream) {
         cameraStream.getTracks().forEach((track) => track.stop());
@@ -400,8 +453,8 @@ function stopCamera(resetDisplay) {
         webcamContainer.replaceChildren(placeholder);
     }
 
-    startBtn.disabled = false;
     startBtnText.textContent = "START CAMERA";
+    setCameraControls("stopped");
 }
 
 function handleCameraEnded() {
